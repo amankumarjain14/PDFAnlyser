@@ -1,0 +1,93 @@
+.wrapper { display: flex; flex-direction: column; gap: 16px; }
+
+.zone {
+  border: 2px dashed var(--border-bright);
+  border-radius: var(--radius-lg);
+  padding: 48px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  background: rgba(13, 25, 55, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+.zone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(79,124,255,0.06) 0%, transparent 70%);
+  transition: opacity 0.3s;
+  opacity: 0;
+}
+.zone:hover::before, .zone.dragOver::before { opacity: 1; }
+
+.zone:hover {
+  border-color: var(--accent-1);
+  background: rgba(79,124,255,0.06);
+  box-shadow: 0 0 0 1px rgba(79,124,255,0.2), var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+.zone.dragOver {
+  border-color: var(--accent-1);
+  background: rgba(79,124,255,0.12);
+  box-shadow: 0 0 0 2px var(--accent-1), var(--shadow-glow);
+  transform: scale(1.01);
+}
+
+.zone.hasFile {
+  border-style: solid;
+  border-color: var(--accent-1);
+  background: rgba(79,124,255,0.08);
+}
+
+.hiddenInput { display: none; }
+
+.iconWrap { position: relative; }
+
+.floatIcon { animation: float 3s ease-in-out infinite; }
+
+.fileInfo { text-align: center; }
+.fileName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-all;
+  max-width: 360px;
+}
+.fileMeta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.hint { text-align: center; }
+.dropText {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.orText {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.limitText {
+  margin-top: 10px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.04);
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
