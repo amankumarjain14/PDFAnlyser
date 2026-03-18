@@ -39,4 +39,5 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app/backend
 
 # Run the application using the dynamic PORT provided by Railway
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Run the application using the dynamic PORT provided by Railway
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port $PORT"]
