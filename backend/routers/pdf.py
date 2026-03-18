@@ -8,9 +8,10 @@ from typing import Dict
 
 import aiofiles
 from fastapi import APIRouter, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
 
+from services.pdf_extractor import extract_text_from_pdf
 from models.schemas import (
     AnalysisResult,
     JobStatus,
@@ -18,11 +19,12 @@ from models.schemas import (
     ProgressEvent,
     StepStatus,
     PIPELINE_STEPS,
+    ChatRequest,
+    ChatResponse
 )
 from services.ai_agent import analyze_pdf_content
 from services.document_generator import generate_docx
 from services.google_drive import upload_to_drive
-from services.pdf_extractor import extract_text_from_pdf
 from config import settings
 
 router = APIRouter(prefix="/api", tags=["pdf"])
@@ -116,6 +118,29 @@ async def get_result(job_id: str):
     return job["result"]
 
 
+# ── Chat endpoint ──────────────────────────────────────────────────────────────
+@router.post("/chat/{job_id}", response_model=ChatResponse)
+async def chat_with_document(job_id: str, request: ChatRequest):
+    if job_id not in jobs:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    job = jobs[job_id]
+    if job["status"] != JobStatus.DONE:
+        raise HTTPException(status_code=400, detail="Document analysis must be complete before chatting.")
+    
+    pdf_text = job.get("pdf_text", "")
+    try:
+        from services.ai_agent import chat_with_pdf
+        answer = await chat_with_pdf(
+            content=pdf_text,
+            chat_history=request.messages,
+            openai_api_key=settings.OPENAI_API_KEY,
+            model=settings.OPENAI_MODEL
+        )
+        return ChatResponse(answer=answer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ── DOCX download ──────────────────────────────────────────────────────────────
 @router.get("/download/{job_id}")
 async def download_docx(job_id: str):
@@ -171,6 +196,7 @@ async def _process_job(job_id: str):
         except Exception as e:
             await fail("extract", str(e))
             return
+        job["pdf_text"] = pdf_text # Store for chat
         _update_step(steps, "extract", StepStatus.DONE, f"Extracted {len(pdf_text):,} characters.")
         await push()
 

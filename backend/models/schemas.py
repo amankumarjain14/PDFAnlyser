@@ -1,6 +1,19 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from enum import Enum
+
+
+class ChatMessage(BaseModel):
+    role: str # 'user' or 'assistant'
+    content: str
+
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessage]
+
+
+class ChatResponse(BaseModel):
+    answer: str
 
 
 class StepStatus(str, Enum):

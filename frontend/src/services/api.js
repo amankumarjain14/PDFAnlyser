@@ -39,4 +39,7 @@ export const createProgressStream = (jobId, onEvent, onError, onDone) => {
   return () => es.close();
 };
 
+export const chatWithPDF = (jobId, messages) => 
+  api.post(`/api/chat/${jobId}`, { messages });
+
 export default api;

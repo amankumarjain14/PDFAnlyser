@@ -140,3 +140,30 @@ async def analyze_pdf_content(
         if isinstance(msg, dict) and msg.get("role") == "assistant" and msg.get("content"):
             return msg["content"]
     return "Analysis could not be completed."
+
+
+async def chat_with_pdf(
+    content: str,
+    chat_history: list,
+    openai_api_key: str,
+    model: str,
+) -> str:
+    """
+    Handle a follow-up chat message using the PDF content as context.
+    """
+    client = AsyncOpenAI(api_key=openai_api_key)
+
+    system_msg = f"You are an assistant helping a user understand a PDF document. Here is the content of the PDF for your reference:\n\n{content[:15000]}"
+    
+    messages = [{"role": "system", "content": system_msg}]
+    
+    # Add chat history (convert from schemas if needed)
+    for msg in chat_history:
+        messages.append({"role": msg.role, "content": msg.content})
+
+    response = await client.chat.completions.create(
+        model=model,
+        messages=messages,
+    )
+
+    return response.choices[0].message.content or "Internal AI error."

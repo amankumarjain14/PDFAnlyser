@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { uploadPDF, createProgressStream, getResult } from './services/api';
 import UploadZone from './components/UploadZone';
 import ProgressTracker from './components/ProgressTracker';
-import ResultCard from './components/ResultCard';
+import ProgressTracker from './components/ProgressTracker';
+import AnalysisDashboard from './components/AnalysisDashboard';
 
 function App() {
   const [view, setView] = useState('upload'); // 'upload' | 'processing' | 'result'
@@ -110,13 +111,7 @@ function App() {
 
           {view === 'result' && finalResult && (
             <div className="result-section">
-              <h1 className="animate-fade-in">Your <span className="gradient-text">Enhanced Report</span> is Ready</h1>
-              <p className="hero-sub animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                We've synthesized the PDF content with fresh insights from the web.
-              </p>
-              <div className="result-container" style={{ animationDelay: '0.2s' }}>
-                <ResultCard result={finalResult} onReset={reset} />
-              </div>
+              <AnalysisDashboard result={finalResult} onReset={reset} />
             </div>
           )}
         </div>
@@ -148,7 +143,7 @@ function App() {
           justify-content: center;
           padding: 40px 20px 80px;
         }
-        .content-width { width: 100%; max-width: 720px; }
+        .content-width { width: 100%; max-width: 1200px; }
         
         .text-center { text-align: center; }
         .hero-sub {

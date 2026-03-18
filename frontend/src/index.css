@@ -7,21 +7,22 @@
   --bg-card-hover:  rgba(20, 38, 80, 0.85);
   --border:         rgba(99, 143, 255, 0.18);
   --border-bright:  rgba(99, 143, 255, 0.45);
-  --accent-1:       #4f7cff;
+  --accent-1:       #6366f1;
   --accent-2:       #a855f7;
-  --accent-glow:    rgba(79, 124, 255, 0.35);
-  --text-primary:   #e8eeff;
-  --text-secondary: #8fa3cc;
-  --text-muted:     #4d6080;
-  --success:        #22d3a5;
+  --accent-3:       #ec4899;
+  --accent-glow:    rgba(99, 102, 241, 0.4);
+  --text-primary:   #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted:     #475569;
+  --success:        #10b981;
   --warning:        #f59e0b;
-  --error:          #f87171;
+  --error:          #ef4444;
   --radius-sm:      8px;
-  --radius-md:      14px;
-  --radius-lg:      22px;
-  --shadow-card:    0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.04) inset;
-  --shadow-glow:    0 0 40px rgba(79, 124, 255, 0.25);
-  --transition:     all 0.25s cubic-bezier(0.4,0,0.2,1);
+  --radius-md:      12px;
+  --radius-lg:      24px;
+  --shadow-card:    0 12px 40px rgba(0,0,0,0.5), 0 1px 1px rgba(255,255,255,0.06) inset;
+  --shadow-glow:    0 0 60px rgba(99, 102, 241, 0.2);
+  --transition:     all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ── Reset & Base ───────────────────────────────────────────────────────────── */
