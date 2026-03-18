@@ -20,6 +20,7 @@ async def get_admin_stats(x_admin_password: Optional[str] = Header(None, alias="
 
 @router.get("/download/{file_type}/{job_id}")
 async def admin_download(file_type: str, job_id: str, x_admin_password: Optional[str] = Header(None, alias="X-Admin-Password")):
+    job_id = job_id.strip()
     if x_admin_password != settings.ADMIN_PASSWORD:
         raise HTTPException(status_code=401, detail="Invalid admin password.")
     

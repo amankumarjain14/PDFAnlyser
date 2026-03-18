@@ -195,6 +195,7 @@ const AdminDashboard = ({ onBack }) => {
             <table>
               <thead>
                 <tr>
+                  <th>Job ID</th>
                   <th>Filename</th>
                   <th>Status</th>
                   <th>Time</th>
@@ -206,6 +207,7 @@ const AdminDashboard = ({ onBack }) => {
               <tbody>
                 {stats?.recent_uploads.map((u, i) => (
                   <tr key={i}>
+                    <td><code style={{fontSize: '10px', opacity: 0.7}}>{u.job_id.slice(0, 8)}...</code></td>
                     <td className={styles.filenameTd}>{u.filename}</td>
                     <td>
                       <span className={`${styles.statusBadge} ${styles[u.status?.toLowerCase()]}`}>
