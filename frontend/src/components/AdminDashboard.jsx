@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getAdminStats, downloadAdminFile } from '../services/api';
-import { Users, FileUp, Clock, ShieldCheck, Lock, AlertCircle, RefreshCw, LogOut, Download, FileText, File } from 'lucide-react';
+import { Users, FileUp, Clock, ShieldCheck, Lock, AlertCircle, RefreshCw, LogOut, Download, FileText, File, TrendingUp, Activity, BarChart2 } from 'lucide-react';
 import styles from './AdminDashboard.module.css';
 
 const AdminDashboard = ({ onBack }) => {
@@ -108,11 +108,49 @@ const AdminDashboard = ({ onBack }) => {
           </div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statIcon}><FileUp size={20} /></div>
+          <div className={styles.statIcon}><TrendingUp size={20} /></div>
           <div className={styles.statInfo}>
-            <span className={styles.label}>Total Uploads</span>
-            <span className={styles.value}>{stats?.total_uploads || 0}</span>
+            <span className={styles.label}>Conversion Rate</span>
+            <span className={styles.value}>{stats?.conversion_rate || 0}%</span>
           </div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statIcon}><Activity size={20} /></div>
+          <div className={styles.statInfo}>
+            <span className={styles.label}>Avg Process Time</span>
+            <span className={styles.value}>{stats?.avg_processing_time || 0}s</span>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.trendCard}>
+        <div className={styles.cardHeader}><BarChart2 size={16} /> 7-Day Traffic Trends</div>
+        <div className={styles.chartArea}>
+          <div className={styles.chartLegend}>
+            <span className={styles.legendVisits}>● Visits</span>
+            <span className={styles.legendUploads}>● Uploads</span>
+          </div>
+          <svg className={styles.chartSvg} viewBox="0 0 1000 200" preserveAspectRatio="none">
+            {stats?.daily_trends && (() => {
+              const max = Math.max(...stats.daily_trends.map(d => Math.max(d.visits, d.uploads, 5)));
+              const points = (type) => stats.daily_trends.map((d, i) => {
+                const x = (i / 6) * 1000;
+                const y = 200 - (d[type] / max) * 160 - 20;
+                return `${x},${y}`;
+              }).join(' ');
+              return (
+                <g>
+                  <polyline points={points('visits')} className={styles.pathVisits} />
+                  <polyline points={points('uploads')} className={styles.pathUploads} />
+                  {stats.daily_trends.map((d, i) => (
+                    <text key={i} x={(i/6)*1000} y="195" className={styles.chartDate}>
+                      {d.date.split('-').slice(1).join('/')}
+                    </text>
+                  ))}
+                </g>
+              );
+            })()}
+          </svg>
         </div>
       </div>
 
@@ -146,7 +184,9 @@ const AdminDashboard = ({ onBack }) => {
               <thead>
                 <tr>
                   <th>Filename</th>
-                  <th>Uploader IP</th>
+                  <th>Status</th>
+                  <th>Time</th>
+                  <th>IP</th>
                   <th>Timestamp</th>
                   <th>Actions</th>
                 </tr>
@@ -155,6 +195,12 @@ const AdminDashboard = ({ onBack }) => {
                 {stats?.recent_uploads.map((u, i) => (
                   <tr key={i}>
                     <td className={styles.filenameTd}>{u.filename}</td>
+                    <td>
+                      <span className={`${styles.statusBadge} ${styles[u.status?.toLowerCase()]}`}>
+                        {u.status || 'PENDING'}
+                      </span>
+                    </td>
+                    <td>{u.processing_time ? `${u.processing_time.toFixed(1)}s` : '-'}</td>
                     <td><code>{u.ip}</code></td>
                     <td>{new Date(u.timestamp + 'Z').toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</td>
                     <td>

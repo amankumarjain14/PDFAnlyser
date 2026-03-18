@@ -25,7 +25,8 @@ from models.schemas import (
 from services.ai_agent import analyze_pdf_content
 from services.document_generator import generate_docx
 from services.google_drive import upload_to_drive
-from services.tracking import log_upload, is_rate_limited
+from services.tracking import log_upload, is_rate_limited, update_upload_status, log_chat
+import time
 from config import settings
 
 router = APIRouter(prefix="/api", tags=["pdf"])
@@ -134,6 +135,8 @@ async def chat_with_document(job_id: str, request: ChatRequest, fastapi_req: Req
     ip = fastapi_req.client.host if fastapi_req.client else "unknown"
     if is_rate_limited(ip, "chat"):
         raise HTTPException(status_code=429, detail="Chat limit reached. Please try again in an hour.")
+    
+    log_chat(job_id, ip)
     if job_id not in jobs:
         raise HTTPException(status_code=404, detail="Job not found.")
     job = jobs[job_id]
@@ -190,9 +193,11 @@ async def _process_job(job_id: str):
         _update_step(steps, step_id, StepStatus.ERROR, message)
         job["status"] = JobStatus.ERROR
         job["error"] = message
+        update_upload_status(job_id, "ERROR")
         await push(JobStatus.ERROR)
 
     try:
+        start_time = time.time()
         job["status"] = JobStatus.PROCESSING
 
         # ── Step 1: Upload (already done, mark instantly) ──────────────────────
@@ -304,6 +309,8 @@ async def _process_job(job_id: str):
         )
         job["result"] = result
         job["status"] = JobStatus.DONE
+        duration = time.time() - start_time
+        update_upload_status(job_id, "SUCCESS", duration)
         await push(JobStatus.DONE)
 
     except Exception as e:

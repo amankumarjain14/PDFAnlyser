@@ -1,6 +1,6 @@
 import sqlite3
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 # Database setup
@@ -26,17 +26,35 @@ def init_db():
             filename TEXT,
             job_id TEXT,
             ip TEXT,
+            status TEXT DEFAULT 'PENDING',
+            processing_time REAL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    # Table for chat hits
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS chat_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            job_id TEXT,
+            ip TEXT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     conn.commit()
     
-    # Ensure IP column exists (if table was already there)
+    # Schema migration helpers
+    try:
+        cursor.execute("ALTER TABLE uploads ADD COLUMN status TEXT DEFAULT 'PENDING'")
+        conn.commit()
+    except: pass
+    try:
+        cursor.execute("ALTER TABLE uploads ADD COLUMN processing_time REAL")
+        conn.commit()
+    except: pass
     try:
         cursor.execute("ALTER TABLE uploads ADD COLUMN ip TEXT")
         conn.commit()
-    except:
-        pass # Already exists
+    except: pass
         
     conn.close()
 
@@ -44,18 +62,13 @@ def log_visit(ip: str, user_agent: str):
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        
-        # Check if we logged this IP/UA in the last 30 minutes to avoid spam
         cursor.execute('''
-            SELECT 1 FROM visits 
-            WHERE ip = ? AND user_agent = ? 
-            AND timestamp > datetime('now', '-30 minutes')
-            LIMIT 1
+            SELECT 1 FROM visits WHERE ip = ? AND user_agent = ? 
+            AND timestamp > datetime('now', '-30 minutes') LIMIT 1
         ''', (ip, user_agent))
-        
         if cursor.fetchone():
             conn.close()
-            return # Already logged recently
+            return
 
         cursor.execute('INSERT INTO visits (ip, user_agent) VALUES (?, ?)', (ip, user_agent))
         conn.commit()
@@ -73,16 +86,34 @@ def log_upload(filename: str, job_id: str, ip: str = "unknown"):
     except Exception as e:
         print(f"Error logging upload: {e}")
 
+from typing import Optional, List, Dict
+
+def update_upload_status(job_id: str, status: str, processing_time: Optional[float] = None):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        if processing_time is not None:
+            cursor.execute('UPDATE uploads SET status = ?, processing_time = ? WHERE job_id = ?', (status, processing_time, job_id))
+        else:
+            cursor.execute('UPDATE uploads SET status = ? WHERE job_id = ?', (status, job_id))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error updating upload status: {e}")
+
+def log_chat(job_id: str, ip: str):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO chat_logs (job_id, ip) VALUES (?, ?)', (job_id, ip))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error logging chat: {e}")
+
 def is_rate_limited(ip: str, action: str = "upload") -> bool:
-    """
-    Check if IP has exceeded limits.
-    Uploads: 5 per hour
-    Chat: 20 per hour
-    """
     limit = 5 if action == "upload" else 20
-    table = "uploads" if action == "upload" else "visits" # Using visits table for chat hits tracking? 
-    # Better to have a separate 'actions' table eventually, but for now we follow the user request.
-    
+    table = "uploads" if action == "upload" else "chat_logs"
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -97,37 +128,38 @@ def is_rate_limited(ip: str, action: str = "upload") -> bool:
 def get_stats():
     try:
         conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        # Total visits
-        cursor.execute('SELECT COUNT(*) FROM visits')
-        total_visits = cursor.fetchone()[0]
+        # Core counts
+        total_visits = cursor.execute('SELECT COUNT(*) FROM visits').fetchone()[0]
+        total_unique = cursor.execute('SELECT COUNT(DISTINCT ip) FROM visits').fetchone()[0]
+        total_uploads = cursor.execute('SELECT COUNT(*) FROM uploads').fetchone()[0]
         
-        # Unique visitors
-        cursor.execute('SELECT COUNT(DISTINCT ip) FROM visits')
-        total_unique = cursor.fetchone()[0]
+        # Advanced Metrics
+        avg_time = cursor.execute('SELECT AVG(processing_time) FROM uploads WHERE status = "SUCCESS"').fetchone()[0] or 0
+        unique_uploaders = cursor.execute('SELECT COUNT(DISTINCT ip) FROM uploads').fetchone()[0]
+        conv_rate = (unique_uploaders / total_unique * 100) if total_unique > 0 else 0
         
-        # Total uploads
-        cursor.execute('SELECT COUNT(*) FROM uploads')
-        total_uploads = cursor.fetchone()[0]
-        
-        # Recent visits (last 10)
-        cursor.execute('SELECT ip, user_agent, timestamp FROM visits ORDER BY timestamp DESC LIMIT 10')
-        recent_visits = [
-            {"ip": r[0], "user_agent": r[1], "timestamp": r[2]} for r in cursor.fetchall()
-        ]
-        
-        # Recent uploads (last 10)
-        cursor.execute('SELECT filename, job_id, timestamp, ip FROM uploads ORDER BY timestamp DESC LIMIT 10')
-        recent_uploads = [
-            {"filename": r[0], "job_id": r[1], "timestamp": r[2], "ip": r[3] or "unknown"} for r in cursor.fetchall()
-        ]
+        # 7-Day Trend
+        daily_stats = []
+        for i in range(6, -1, -1):
+            day = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+            v_count = cursor.execute("SELECT COUNT(*) FROM visits WHERE date(timestamp) = ?", (day,)).fetchone()[0]
+            u_count = cursor.execute("SELECT COUNT(*) FROM uploads WHERE date(timestamp) = ?", (day,)).fetchone()[0]
+            daily_stats.append({"date": day, "visits": v_count, "uploads": u_count})
+
+        recent_visits = [dict(r) for r in cursor.execute('SELECT ip, user_agent, timestamp FROM visits ORDER BY timestamp DESC LIMIT 10').fetchall()]
+        recent_uploads = [dict(r) for r in cursor.execute('SELECT filename, job_id, timestamp, ip, status, processing_time FROM uploads ORDER BY timestamp DESC LIMIT 10').fetchall()]
         
         conn.close()
         return {
             "total_visits": total_visits,
             "total_unique_visitors": total_unique,
             "total_uploads": total_uploads,
+            "conversion_rate": round(conv_rate, 1),
+            "avg_processing_time": round(avg_time, 1),
+            "daily_trends": daily_stats,
             "recent_visits": recent_visits,
             "recent_uploads": recent_uploads
         }
@@ -135,5 +167,4 @@ def get_stats():
         print(f"Error fetching stats: {e}")
         return {}
 
-# Run init on import
 init_db()

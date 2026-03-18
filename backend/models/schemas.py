@@ -27,12 +27,23 @@ class UploadInfo(BaseModel):
     job_id: str
     timestamp: str
     ip: str
+    status: Optional[str] = "SUCCESS"
+    processing_time: Optional[float] = None
+
+
+class DailyTrend(BaseModel):
+    date: str
+    visits: int
+    uploads: int
 
 
 class AdminStats(BaseModel):
     total_visits: int
     total_unique_visitors: int
     total_uploads: int
+    conversion_rate: float = 0.0
+    avg_processing_time: float = 0.0
+    daily_trends: List[DailyTrend] = []
     recent_visits: List[VisitInfo]
     recent_uploads: List[UploadInfo]
 
