@@ -27,21 +27,24 @@ async def admin_download(file_type: str, job_id: str, x_admin_password: Optional
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     os.makedirs(settings.OUTPUT_DIR, exist_ok=True)
     
-    if file_type == "pdf":
-        print(f"DEBUG: Admin PDF download for {job_id} in {settings.UPLOAD_DIR}")
-        for f in os.listdir(settings.UPLOAD_DIR):
-            if f.startswith(f"{job_id}_"):
-                file_path = os.path.join(settings.UPLOAD_DIR, f)
-                return FileResponse(file_path, filename=f[len(job_id)+1:])
-        print(f"DEBUG: PDF {job_id} not found in {os.listdir(settings.UPLOAD_DIR)}")
-    elif file_type == "docx":
-        print(f"DEBUG: Admin DOCX download search for {job_id} in {settings.OUTPUT_DIR}")
-        if not os.path.exists(settings.OUTPUT_DIR):
-            raise HTTPException(status_code=404, detail="Output directory missing.")
-        for f in os.listdir(settings.OUTPUT_DIR):
-            if f.startswith(f"{job_id}_"):
-                file_path = os.path.join(settings.OUTPUT_DIR, f)
-                return FileResponse(file_path, filename=f[len(job_id)+1:])
-        print(f"DEBUG: DOCX {job_id} not found in {os.listdir(settings.OUTPUT_DIR)}")
+    search_dir = settings.UPLOAD_DIR if file_type == "pdf" else settings.OUTPUT_DIR
+    files_in_dir = os.listdir(search_dir) if os.path.exists(search_dir) else []
+    
+    print(f"DIAGNOSTIC: Admin {file_type} download for job_id: {job_id}")
+    print(f"DIAGNOSTIC: Search directory: {search_dir}")
+    print(f"DIAGNOSTIC: Current working directory: {os.getcwd()}")
+    print(f"DIAGNOSTIC: Files found in dir: {files_in_dir}")
+
+    for f in files_in_dir:
+        if f.startswith(f"{job_id}_"):
+            file_path = os.path.join(search_dir, f)
+            return FileResponse(file_path, filename=f[len(job_id)+1:])
             
-    raise HTTPException(status_code=404, detail=f"File not found for job {job_id}. Note: Files are deleted on server restart.")
+    # If not found, raise a very descriptive error
+    dir_summary = f"{len(files_in_dir)} files in {search_dir}"
+    raise HTTPException(
+        status_code=404, 
+        detail=f"File not found for job {job_id}. Type: {file_type}. "
+               f"Search path: {search_dir}. Dir status: {dir_summary}. "
+               f"Files: {files_in_dir[:5]}..."
+    )
