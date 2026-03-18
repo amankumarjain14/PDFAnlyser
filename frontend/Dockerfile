@@ -20,6 +20,6 @@ COPY --from=build-stage /app/dist /usr/share/nginx/html
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+# Use a shell script to replace the port in nginx.conf if needed, or just let Nginx listen on a fixed port if we proxy.
+# However, Railway expects the container to listen on $PORT.
+CMD ["sh", "-c", "sed -i 's/listen 80;/listen '\"${PORT:-80}\"';/g' /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
