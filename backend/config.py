@@ -1,6 +1,6 @@
-import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
+import os
 
 # Get the directory of the current file
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

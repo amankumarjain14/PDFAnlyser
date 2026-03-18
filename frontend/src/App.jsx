@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { uploadPDF, createProgressStream, getResult } from './services/api';
 import UploadZone from './components/UploadZone';
 import ProgressTracker from './components/ProgressTracker';
-import ProgressTracker from './components/ProgressTracker';
 import AnalysisDashboard from './components/AnalysisDashboard';
 
 function App() {
