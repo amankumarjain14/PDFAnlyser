@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getAdminStats } from '../services/api';
-import { Users, FileUp, Clock, ShieldCheck, Lock, AlertCircle, RefreshCw, LogOut } from 'lucide-react';
+import { getAdminStats, downloadAdminFile } from '../services/api';
+import { Users, FileUp, Clock, ShieldCheck, Lock, AlertCircle, RefreshCw, LogOut, Download, FileText, File } from 'lucide-react';
 import styles from './AdminDashboard.module.css';
 
 const AdminDashboard = ({ onBack }) => {
@@ -23,6 +23,22 @@ const AdminDashboard = ({ onBack }) => {
       setIsAuthorized(false);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDownload = async (type, jobId, filename) => {
+    try {
+      const response = await downloadAdminFile(password, type, jobId);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const downloadName = type === 'pdf' ? filename : filename.replace('.pdf', '_enhanced.docx');
+      link.setAttribute('download', downloadName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      alert('Download failed: ' + (err.response?.status === 404 ? 'File not found' : 'Network error'));
     }
   };
 
@@ -85,6 +101,13 @@ const AdminDashboard = ({ onBack }) => {
           </div>
         </div>
         <div className={styles.statCard}>
+          <div className={styles.statIcon}><ShieldCheck size={20} /></div>
+          <div className={styles.statInfo}>
+            <span className={styles.label}>Unique Visitors</span>
+            <span className={styles.value}>{stats?.total_unique_visitors || 0}</span>
+          </div>
+        </div>
+        <div className={styles.statCard}>
           <div className={styles.statIcon}><FileUp size={20} /></div>
           <div className={styles.statInfo}>
             <span className={styles.label}>Total Uploads</span>
@@ -108,7 +131,7 @@ const AdminDashboard = ({ onBack }) => {
                 {stats?.recent_visits.map((v, i) => (
                   <tr key={i}>
                     <td><code>{v.ip}</code></td>
-                    <td>{new Date(v.timestamp).toLocaleString()}</td>
+                    <td>{new Date(v.timestamp + 'Z').toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</td>
                   </tr>
                 ))}
               </tbody>
@@ -123,14 +146,35 @@ const AdminDashboard = ({ onBack }) => {
               <thead>
                 <tr>
                   <th>Filename</th>
+                  <th>Uploader IP</th>
                   <th>Timestamp</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {stats?.recent_uploads.map((u, i) => (
                   <tr key={i}>
                     <td className={styles.filenameTd}>{u.filename}</td>
-                    <td>{new Date(u.timestamp).toLocaleString()}</td>
+                    <td><code>{u.ip}</code></td>
+                    <td>{new Date(u.timestamp + 'Z').toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</td>
+                    <td>
+                      <div className={styles.actionGroup}>
+                        <button 
+                          className={styles.iconBtn} 
+                          onClick={() => handleDownload('pdf', u.job_id, u.filename)}
+                          title="Download Original PDF"
+                        >
+                          <File size={16} />
+                        </button>
+                        <button 
+                          className={styles.iconBtn} 
+                          onClick={() => handleDownload('docx', u.job_id, u.filename)}
+                          title="Download Enhanced DOCX"
+                        >
+                          <FileText size={16} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

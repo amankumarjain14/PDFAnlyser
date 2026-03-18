@@ -26,10 +26,12 @@ class UploadInfo(BaseModel):
     filename: str
     job_id: str
     timestamp: str
+    ip: str
 
 
 class AdminStats(BaseModel):
     total_visits: int
+    total_unique_visitors: int
     total_uploads: int
     recent_visits: List[VisitInfo]
     recent_uploads: List[UploadInfo]

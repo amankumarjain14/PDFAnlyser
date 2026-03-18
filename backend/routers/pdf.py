@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict
 
 import aiofiles
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile, Request
 from fastapi.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
 
@@ -25,7 +25,7 @@ from models.schemas import (
 from services.ai_agent import analyze_pdf_content
 from services.document_generator import generate_docx
 from services.google_drive import upload_to_drive
-from services.tracking import log_upload
+from services.tracking import log_upload, is_rate_limited
 from config import settings
 
 router = APIRouter(prefix="/api", tags=["pdf"])
@@ -49,7 +49,12 @@ def _update_step(steps, step_id: str, status: StepStatus, message: str = None):
 
 # ── Upload endpoint ────────────────────────────────────────────────────────────
 @router.post("/upload")
-async def upload_pdf(file: UploadFile = File(...)):
+async def upload_pdf(request: Request, file: UploadFile = File(...)):
+    # Rate limit check
+    ip = request.client.host if request.client else "unknown"
+    if is_rate_limited(ip, "upload"):
+        raise HTTPException(status_code=429, detail="Upload limit reached. Please try again in an hour.")
+        
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
 
@@ -84,7 +89,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     asyncio.create_task(_process_job(job_id))
 
     # Log upload
-    log_upload(file.filename, job_id)
+    log_upload(file.filename, job_id, ip)
 
     return {"job_id": job_id, "filename": file.filename}
 
@@ -124,7 +129,11 @@ async def get_result(job_id: str):
 
 # ── Chat endpoint ──────────────────────────────────────────────────────────────
 @router.post("/chat/{job_id}", response_model=ChatResponse)
-async def chat_with_document(job_id: str, request: ChatRequest):
+async def chat_with_document(job_id: str, request: ChatRequest, fastapi_req: Request):
+    # Rate limit check for chat
+    ip = fastapi_req.client.host if fastapi_req.client else "unknown"
+    if is_rate_limited(ip, "chat"):
+        raise HTTPException(status_code=429, detail="Chat limit reached. Please try again in an hour.")
     if job_id not in jobs:
         raise HTTPException(status_code=404, detail="Job not found.")
     job = jobs[job_id]

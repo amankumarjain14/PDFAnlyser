@@ -47,4 +47,10 @@ export const getAdminStats = (password) =>
     headers: { 'X-Admin-Password': password }
   });
 
+export const downloadAdminFile = (password, type, jobId) =>
+  api.get(`/api/admin/download/${type}/${jobId}`, {
+    headers: { 'X-Admin-Password': password },
+    responseType: 'blob'
+  });
+
 export default api;
