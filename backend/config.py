@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     SERPAPI_KEY: Optional[str] = None
     GOOGLE_SERVICE_ACCOUNT_JSON: Optional[str] = None
     MAX_FILE_SIZE_MB: int = 50
-    UPLOAD_DIR: str = "uploads"
-    OUTPUT_DIR: str = "outputs"
+    UPLOAD_DIR: str = os.path.join(BASE_DIR, "uploads")
+    OUTPUT_DIR: str = os.path.join(BASE_DIR, "outputs")
     ADMIN_PASSWORD: str = "admin123" # Default, should be changed in .env
 
     model_config = SettingsConfigDict(

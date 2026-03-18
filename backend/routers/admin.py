@@ -23,15 +23,25 @@ async def admin_download(file_type: str, job_id: str, x_admin_password: Optional
     if x_admin_password != settings.ADMIN_PASSWORD:
         raise HTTPException(status_code=401, detail="Invalid admin password.")
     
+    # Ensure directories exist
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    os.makedirs(settings.OUTPUT_DIR, exist_ok=True)
+    
     if file_type == "pdf":
-        if not os.path.exists(settings.UPLOAD_DIR):
-            raise HTTPException(status_code=404, detail="Upload directory missing.")
+        print(f"DEBUG: Admin PDF download for {job_id} in {settings.UPLOAD_DIR}")
         for f in os.listdir(settings.UPLOAD_DIR):
             if f.startswith(f"{job_id}_"):
-                return FileResponse(os.path.join(settings.UPLOAD_DIR, f), filename=f[len(job_id)+1:])
+                file_path = os.path.join(settings.UPLOAD_DIR, f)
+                return FileResponse(file_path, filename=f[len(job_id)+1:])
+        print(f"DEBUG: PDF {job_id} not found in {os.listdir(settings.UPLOAD_DIR)}")
     elif file_type == "docx":
-        path = os.path.join(settings.OUTPUT_DIR, f"{job_id}_enhanced.docx")
-        if os.path.exists(path):
-            return FileResponse(path, filename=f"enhanced_{job_id}.docx")
+        print(f"DEBUG: Admin DOCX download search for {job_id} in {settings.OUTPUT_DIR}")
+        if not os.path.exists(settings.OUTPUT_DIR):
+            raise HTTPException(status_code=404, detail="Output directory missing.")
+        for f in os.listdir(settings.OUTPUT_DIR):
+            if f.startswith(f"{job_id}_"):
+                file_path = os.path.join(settings.OUTPUT_DIR, f)
+                return FileResponse(file_path, filename=f[len(job_id)+1:])
+        print(f"DEBUG: DOCX {job_id} not found in {os.listdir(settings.OUTPUT_DIR)}")
             
-    raise HTTPException(status_code=404, detail="File not found.")
+    raise HTTPException(status_code=404, detail=f"File not found for job {job_id}. Note: Files are deleted on server restart.")
