@@ -42,4 +42,9 @@ export const createProgressStream = (jobId, onEvent, onError, onDone) => {
 export const chatWithPDF = (jobId, messages) => 
   api.post(`/api/chat/${jobId}`, { messages });
 
+export const getAdminStats = (password) =>
+  api.get('/api/admin/stats', {
+    headers: { 'X-Admin-Password': password }
+  });
+
 export default api;

@@ -1,8 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
 from routers.pdf import router as pdf_router
+from routers.admin import router as admin_router
+from services.tracking import log_visit
 import os
 
 app = FastAPI(
@@ -21,6 +23,19 @@ app.add_middleware(
 )
 
 app.include_router(pdf_router)
+app.include_router(admin_router)
+
+# ── Visitor tracking middleware ──────────────────────────────────────────────
+@app.middleware("http")
+async def track_visits(request: Request, call_next):
+    # Log visit if it's a page request or initial API hit
+    if request.method == "GET" and not request.url.path.startswith("/api") and not request.url.path.startswith("/static"):
+        ip = request.client.host if request.client else "unknown"
+        ua = request.headers.get("user-agent", "unknown")
+        log_visit(ip, ua)
+    
+    response = await call_next(request)
+    return response
 
 @app.get("/health")
 async def health():

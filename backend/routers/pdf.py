@@ -25,6 +25,7 @@ from models.schemas import (
 from services.ai_agent import analyze_pdf_content
 from services.document_generator import generate_docx
 from services.google_drive import upload_to_drive
+from services.tracking import log_upload
 from config import settings
 
 router = APIRouter(prefix="/api", tags=["pdf"])
@@ -81,6 +82,9 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     # Kick off processing in the background
     asyncio.create_task(_process_job(job_id))
+
+    # Log upload
+    log_upload(file.filename, job_id)
 
     return {"job_id": job_id, "filename": file.filename}
 

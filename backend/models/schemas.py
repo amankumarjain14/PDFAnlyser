@@ -16,6 +16,25 @@ class ChatResponse(BaseModel):
     answer: str
 
 
+class VisitInfo(BaseModel):
+    ip: str
+    user_agent: str
+    timestamp: str
+
+
+class UploadInfo(BaseModel):
+    filename: str
+    job_id: str
+    timestamp: str
+
+
+class AdminStats(BaseModel):
+    total_visits: int
+    total_uploads: int
+    recent_visits: List[VisitInfo]
+    recent_uploads: List[UploadInfo]
+
+
 class StepStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"

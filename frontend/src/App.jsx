@@ -3,9 +3,10 @@ import { uploadPDF, createProgressStream, getResult } from './services/api';
 import UploadZone from './components/UploadZone';
 import ProgressTracker from './components/ProgressTracker';
 import AnalysisDashboard from './components/AnalysisDashboard';
+import AdminDashboard from './components/AdminDashboard';
 
 function App() {
-  const [view, setView] = useState('upload'); // 'upload' | 'processing' | 'result'
+  const [view, setView] = useState('upload'); // 'upload' | 'processing' | 'result' | 'admin'
   const [jobId, setJobId] = useState(null);
   const [filename, setFilename] = useState('');
   const [steps, setSteps] = useState([]);
@@ -113,14 +114,31 @@ function App() {
               <AnalysisDashboard result={finalResult} onReset={reset} />
             </div>
           )}
+          {view === 'admin' && (
+            <AdminDashboard onBack={() => setView('upload')} />
+          )}
         </div>
       </main>
 
       <footer className="main-footer animate-fade-in">
-        <p>&copy; 2026 PDF Analyser &bull; Powered by Google & OpenAI</p>
+        <p>
+          &copy; 2026 PDF Analyser &bull; Powered by Google & OpenAI
+          <span className="footer-separator">|</span>
+          <button className="admin-trigger" onClick={() => setView('admin')}>Admin</button>
+        </p>
       </footer>
 
       <style>{`
+        .footer-separator { margin: 0 12px; opacity: 0.3; }
+        .admin-trigger {
+          background: transparent;
+          border: none;
+          color: var(--text-muted);
+          cursor: pointer;
+          font-size: 0.85rem;
+          transition: color 0.2s;
+        }
+        .admin-trigger:hover { color: var(--accent-1); }
         .container-wrapper {
           min-height: 100vh;
           display: flex;

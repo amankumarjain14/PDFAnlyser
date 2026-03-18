@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE_MB: int = 50
     UPLOAD_DIR: str = "uploads"
     OUTPUT_DIR: str = "outputs"
+    ADMIN_PASSWORD: str = "admin123" # Default, should be changed in .env
 
     model_config = SettingsConfigDict(
         env_file=os.path.join(BASE_DIR, ".env"),
