@@ -164,3 +164,8 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.messageContent :global(p):first-child { margin-top: 0; }
+.messageContent :global(p):last-child { margin-bottom: 0; }
+.messageContent :global(ul), .messageContent :global(ol) { margin: 8px 0; }
+.messageContent :global(li) { margin: 4px 0; }

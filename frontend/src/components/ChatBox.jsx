@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Send, User, Bot, Loader2 } from 'lucide-react';
 import { chatWithPDF } from '../services/api';
 import styles from './ChatBox.module.css';
@@ -54,8 +56,10 @@ const ChatBox = ({ jobId }) => {
             <div className={styles.avatar}>
               {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
             </div>
-            <div className={styles.messageContent}>
-              {msg.content}
+            <div className={`${styles.messageContent} markdown-body`}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {msg.content}
+              </ReactMarkdown>
             </div>
           </div>
         ))}
