@@ -38,7 +38,19 @@ const AdminDashboard = ({ onBack }) => {
       link.click();
       link.remove();
     } catch (err) {
-      alert('Download failed: ' + (err.response?.status === 404 ? 'File not found' : 'Network error'));
+      let msg = 'Network error or file missing';
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const data = JSON.parse(text);
+          msg = data.detail;
+        } catch (e) {
+          msg = `Error ${err.response.status}: ${err.response.statusText}`;
+        }
+      } else if (err.response?.data?.detail) {
+        msg = err.response.data.detail;
+      }
+      alert('Download failed: ' + msg);
     }
   };
 
